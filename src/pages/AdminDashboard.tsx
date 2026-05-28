@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+﻿import { useState, useEffect, useMemo } from 'react';
 import { useSiteData, MenuItem } from '../context/SiteContext';
 import { 
   LayoutDashboard, 
@@ -34,6 +34,14 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Login from '../components/Login';
+
+const parsePeso = (value: string) => Number(value.replace(/[^\d.-]/g, '')) || 0;
+const formatPeso = (value: number) => `₱${value.toFixed(2)}`;
+const getDeliveryFeeForMinOrder = (minOrderValue: number) => {
+  if (minOrderValue >= 2000) return 200;
+  if (minOrderValue >= 1000) return 100;
+  return 50;
+};
 
 const ImageUploadField = ({ label, value, onChange, presets = [] }: { 
   label: string, 
@@ -268,6 +276,19 @@ const AdminDashboard = () => {
   };
 
   const handleChange = (section: keyof typeof data, field: string, value: any) => {
+    if (section === 'settings' && field === 'minOrder') {
+      const parsed = parsePeso(value);
+      const deliveryFee = formatPeso(getDeliveryFeeForMinOrder(parsed));
+      updateData({
+        [section]: {
+          ...(data[section] as any),
+          [field]: value,
+          deliveryFee
+        }
+      });
+      return;
+    }
+
     updateData({
       [section]: {
         ...(data[section] as any),
@@ -1469,9 +1490,10 @@ const AdminDashboard = () => {
                       <input 
                         type="text" 
                         value={data.settings.deliveryFee}
-                        onChange={(e) => handleChange('settings', 'deliveryFee', e.target.value)}
-                        className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 outline-none"
+                        readOnly
+                        className="w-full p-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
                       />
+                      <p className="text-xs text-gray-500 mt-2">Auto-calculated based on minimum order value.</p>
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">Min. Order Value</label>
@@ -1481,6 +1503,7 @@ const AdminDashboard = () => {
                         onChange={(e) => handleChange('settings', 'minOrder', e.target.value)}
                         className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 outline-none"
                       />
+                      <p className="text-xs text-gray-500 mt-2">Delivery fee is assigned automatically for this min order value.</p>
                     </div>
                   </div>
                 </div>
@@ -1657,3 +1680,6 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+
+
