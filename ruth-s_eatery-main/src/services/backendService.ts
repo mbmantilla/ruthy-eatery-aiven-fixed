@@ -1,0 +1,65 @@
+const rawApiUrl = ((import.meta as unknown as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL) || '/api';
+const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/$/, '')}/api`;
+
+const parseJsonResponse = async (response: Response) => {
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const errorMessage = body.error || body.message || `Request failed with status ${response.status}`;
+    throw new Error(errorMessage);
+  }
+  return body;
+};
+
+export const backendService = {
+  checkConnection: async () => {
+    try {
+      const response = await fetch(`${API_URL}/health`);
+      return await parseJsonResponse(response);
+    } catch (error) {
+      return {
+        status: 'offline',
+        message: error instanceof Error ? error.message : 'Backend is offline',
+      };
+    }
+  },
+
+  getSiteData: async () => {
+    const response = await fetch(`${API_URL}/data`);
+    return await parseJsonResponse(response);
+  },
+
+  saveSiteData: async (data: unknown) => {
+    const response = await fetch(`${API_URL}/data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return await parseJsonResponse(response);
+  },
+
+  login: async (email: string, password: string) => {
+    if (!email || !password) {
+      throw new Error('Email and password are required');
+    }
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    return await parseJsonResponse(response);
+  },
+
+  signup: async (name: string, email: string, password: string) => {
+    if (!name || !email || !password) {
+      throw new Error('Name, email and password are required');
+    }
+    const response = await fetch(`${API_URL}/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+    return await parseJsonResponse(response);
+  },
+
+  uploadImage: async (base64: string) => ({ url: base64 }),
+};
