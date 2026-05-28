@@ -93,6 +93,7 @@ export interface SiteData {
     pickupEnabled: boolean;
     deliveryFee: string;
     minOrder: string;
+    deliveryRules: { minOrder: string; fee: string }[];
   };
   messages: SiteMessage[];
   bookings: SiteBooking[];
@@ -161,6 +162,11 @@ const defaultData: SiteData = {
     pickupEnabled: true,
     deliveryFee: '₱50.00',
     minOrder: '₱500.00',
+    deliveryRules: [
+      { minOrder: '₱500.00', fee: '₱50.00' },
+      { minOrder: '₱1000.00', fee: '₱100.00' },
+      { minOrder: '₱2000.00', fee: '₱200.00' }
+    ]
   },
   messages: [],
   bookings: [],
@@ -204,7 +210,11 @@ const normalizeSiteData = (incoming: Partial<SiteData> | null | undefined): Site
   about: { ...defaultData.about, ...(incoming?.about || {}) },
   theme: { ...defaultData.theme, ...(incoming?.theme || {}) },
   contact: { ...defaultData.contact, ...(incoming?.contact || {}) },
-  settings: { ...defaultData.settings, ...(incoming?.settings || {}) },
+  settings: {
+    ...defaultData.settings,
+    ...(incoming?.settings || {}),
+    deliveryRules: Array.isArray(incoming?.settings?.deliveryRules) ? incoming.settings.deliveryRules : defaultData.settings.deliveryRules,
+  },
   menu: Array.isArray(incoming?.menu) ? incoming.menu : defaultData.menu,
   messages: Array.isArray(incoming?.messages) ? incoming.messages : [],
   bookings: Array.isArray(incoming?.bookings) ? incoming.bookings : [],

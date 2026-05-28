@@ -278,7 +278,7 @@ const AdminDashboard = () => {
   const handleChange = (section: keyof typeof data, field: string, value: any) => {
     if (section === 'settings' && field === 'minOrder') {
       const parsed = parsePeso(value);
-      const deliveryFee = formatPeso(getDeliveryFeeForMinOrder(parsed));
+      const deliveryFee = formatPeso(getDeliveryFeeForMinOrder(parsed, data.settings.deliveryRules || []));
       updateData({
         [section]: {
           ...(data[section] as any),
@@ -293,6 +293,22 @@ const AdminDashboard = () => {
       [section]: {
         ...(data[section] as any),
         [field]: value
+      }
+    });
+  };
+
+  const handleDeliveryRuleChange = (index: number, field: 'minOrder' | 'fee', value: string) => {
+    const nextRules = data.settings.deliveryRules.map((rule, i) =>
+      i === index ? { ...rule, [field]: value } : rule
+    );
+    const parsed = parsePeso(data.settings.minOrder);
+    const deliveryFee = formatPeso(getDeliveryFeeForMinOrder(parsed, nextRules));
+
+    updateData({
+      settings: {
+        ...data.settings,
+        deliveryRules: nextRules,
+        deliveryFee
       }
     });
   };
@@ -1486,14 +1502,14 @@ const AdminDashboard = () => {
                   </div>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">Delivery Fee</label>
+                      <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">Current Delivery Fee</label>
                       <input 
                         type="text" 
                         value={data.settings.deliveryFee}
                         readOnly
                         className="w-full p-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
                       />
-                      <p className="text-xs text-gray-500 mt-2">Auto-calculated based on minimum order value.</p>
+                      <p className="text-xs text-gray-500 mt-2">Auto-calculated based on the chosen minimum order threshold.</p>
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">Min. Order Value</label>
@@ -1503,7 +1519,35 @@ const AdminDashboard = () => {
                         onChange={(e) => handleChange('settings', 'minOrder', e.target.value)}
                         className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 outline-none"
                       />
-                      <p className="text-xs text-gray-500 mt-2">Delivery fee is assigned automatically for this min order value.</p>
+                      <p className="text-xs text-gray-500 mt-2">Use this value to choose the rule that applies to the current delivery fee.</p>
+                    </div>
+                    <div className="col-span-full">
+                      <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">Delivery fee rules</label>
+                      <div className="space-y-4">
+                        {data.settings.deliveryRules.map((rule, index) => (
+                          <div key={index} className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-500 mb-1">Min. Order</label>
+                              <input
+                                type="text"
+                                value={rule.minOrder}
+                                onChange={(e) => handleDeliveryRuleChange(index, 'minOrder', e.target.value)}
+                                className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-500 mb-1">Delivery Fee</label>
+                              <input
+                                type="text"
+                                value={rule.fee}
+                                onChange={(e) => handleDeliveryRuleChange(index, 'fee', e.target.value)}
+                                className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 outline-none"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">These rules control how delivery charges are mapped for orders.</p>
                     </div>
                   </div>
                 </div>

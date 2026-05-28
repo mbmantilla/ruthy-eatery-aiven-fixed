@@ -9,6 +9,19 @@ export interface CartItem extends MenuItem {
 
 import AuthModal from './AuthModal';
 
+const parsePeso = (value: string) => Number(value.replace(/[^\d.-]/g, '')) || 0;
+const getDeliveryFeeFromRules = (subtotal: number, rules: { minOrder: string; fee: string }[]) => {
+  const sortedRules = [...rules]
+    .map((rule) => ({
+      minOrder: parsePeso(rule.minOrder),
+      fee: parsePeso(rule.fee),
+    }))
+    .sort((a, b) => b.minOrder - a.minOrder);
+
+  const matchingRule = sortedRules.find((rule) => subtotal >= rule.minOrder);
+  return matchingRule ? matchingRule.fee : 0;
+};
+
 const Cart = () => {
   const { data, addOrder, isUserLoggedIn, currentUser } = useSiteData();
   const [isOpen, setIsOpen] = useState(false);
@@ -49,7 +62,9 @@ const Cart = () => {
     return acc + (price * item.quantity);
   }, 0);
   
-  const deliveryFee = orderType === 'delivery' ? parseFloat(data.settings.deliveryFee.replace(/[^\d.-]/g, '')) : 0;
+  const deliveryFee = orderType === 'delivery'
+    ? getDeliveryFeeFromRules(subtotal, data.settings.deliveryRules)
+    : 0;
   const total = subtotal + deliveryFee;
 
   const updateQuantity = (name: string, delta: number) => {
@@ -388,3 +403,4 @@ const Cart = () => {
 };
 
 export default Cart;
+
