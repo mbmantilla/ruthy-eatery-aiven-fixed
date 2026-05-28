@@ -311,7 +311,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const replyToMessage = async (id: string, reply: string) => {
     const result = await backendService.replyMessage(id, reply);
     const updatedMessages = data.messages.map(m =>
-      m.id === id ? { ...m, reply: result.reply, replyDate: result.replyDate, isRead: true } : m
+      m.id === id ? { ...m, reply: result.reply, replyDate: result.replyDate, repliedBy: result.repliedBy || m.repliedBy, isRead: true } : m
     );
     setData({ ...data, messages: updatedMessages });
   };

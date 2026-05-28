@@ -179,13 +179,27 @@ const AdminDashboard = () => {
   const bookingsPerPage = 10;
   const totalBookingPages = Math.max(1, Math.ceil(data.bookings.length / bookingsPerPage));
   const currentBookingPage = Math.min(bookingPage, totalBookingPages);
-  const pageBookings = useMemo(() => data.bookings.slice((currentBookingPage - 1) * bookingsPerPage, currentBookingPage * bookingsPerPage), [data.bookings, currentBookingPage]);
+  const pageBookings = useMemo(
+    () => data.bookings.slice((currentBookingPage - 1) * bookingsPerPage, currentBookingPage * bookingsPerPage),
+    [data.bookings, currentBookingPage]
+  );
   const orderStats = useMemo(() => ({
     pending: data.orders.filter((o) => o.status === 'pending').length,
     preparing: data.orders.filter((o) => o.status === 'preparing').length,
     completed: data.orders.filter((o) => o.status === 'completed').length,
     cancelled: data.orders.filter((o) => o.status === 'cancelled').length,
   }), [data.orders]);
+  const bookingStats = useMemo(() => ({
+    pending: data.bookings.filter((b) => b.status === 'pending').length,
+    confirmed: data.bookings.filter((b) => b.status === 'confirmed').length,
+    cancelled: data.bookings.filter((b) => b.status === 'cancelled').length,
+  }), [data.bookings]);
+  const messageStats = useMemo(() => ({
+    replied: data.messages.filter((m) => !!m.reply).length,
+    awaiting: data.messages.filter((m) => !m.reply).length,
+    unread: data.messages.filter((m) => !m.isRead).length,
+  }), [data.messages]);
+  const totalRevenue = useMemo(() => data.orders.reduce((sum, order) => sum + Number(order.total || 0), 0), [data.orders]);
 
   useEffect(() => {
     if (bookingPage > totalBookingPages) {
@@ -600,8 +614,11 @@ const AdminDashboard = () => {
                       <h3 className="font-bold text-gray-900 text-xl">Reservations</h3>
                       <p className="text-sm text-gray-500">Manage table bookings and guest attendance.</p>
                    </div>
-                   <div className="flex gap-4 text-xs font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-xl text-amber-600">
-                      Total Bookings: {data.bookings.length}
+                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-xl text-amber-600">
+                      <span>Total Bookings: {data.bookings.length}</span>
+                      {data.bookings.length > bookingsPerPage && (
+                        <span className="text-gray-500">Showing {(currentBookingPage - 1) * bookingsPerPage + 1}-{Math.min(currentBookingPage * bookingsPerPage, data.bookings.length)} of {data.bookings.length}</span>
+                      )}
                    </div>
                 </div>
 
@@ -787,83 +804,125 @@ const AdminDashboard = () => {
             )}
 
             {activeTab === 'overview' && (
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="col-span-2 bg-gradient-to-r from-amber-600 to-amber-500 p-8 rounded-[2.5rem] text-white shadow-xl shadow-amber-600/10 flex justify-between items-center">
-                  <div>
-                    <h2 className="text-3xl font-serif font-bold mb-2">Welcome, Ruthy Admin</h2>
-                    <p className="opacity-90 max-w-md">Your restaurant's digital presence is looking great. All changes you make here will be reflected on your website instantly.</p>
+              <div className="space-y-8">
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="col-span-2 bg-gradient-to-r from-amber-600 to-amber-500 p-8 rounded-[2.5rem] text-white shadow-xl shadow-amber-600/10 flex flex-col justify-between gap-6">
+                    <div>
+                      <h2 className="text-3xl font-serif font-bold mb-2">Welcome, Ruthy Admin</h2>
+                      <p className="opacity-90 max-w-md">Your restaurant's digital presence is looking great. All changes you make here will be reflected on your website instantly.</p>
+                    </div>
+                    <div className="flex flex-wrap gap-4">
+                      <div className="rounded-3xl bg-white/10 px-5 py-4">
+                        <p className="text-xs uppercase tracking-widest opacity-80">Total Revenue</p>
+                        <p className="text-3xl font-bold">₱{totalRevenue.toLocaleString()}</p>
+                      </div>
+                      <div className="rounded-3xl bg-white/10 px-5 py-4">
+                        <p className="text-xs uppercase tracking-widest opacity-80">Active Orders</p>
+                        <p className="text-3xl font-bold">{data.orders.length}</p>
+                      </div>
+                      <div className="rounded-3xl bg-white/10 px-5 py-4">
+                        <p className="text-xs uppercase tracking-widest opacity-80">Bookings</p>
+                        <p className="text-3xl font-bold">{data.bookings.length}</p>
+                      </div>
+                      <div className="rounded-3xl bg-white/10 px-5 py-4">
+                        <p className="text-xs uppercase tracking-widest opacity-80">Unread Messages</p>
+                        <p className="text-3xl font-bold">{messageStats.unread}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => { if(confirm('Reset website to original default content?')) resetToDefault(); }}
+                      className="self-start bg-white/20 hover:bg-white/30 border border-white/30 px-4 py-2 rounded-xl text-sm font-bold transition-colors"
+                    >
+                      Reset Content
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => { if(confirm('Reset website to original default content?')) resetToDefault(); }}
-                    className="bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2 rounded-xl text-sm font-bold transition-colors"
-                  >
-                    Reset Content
-                  </button>
-                </div>
-                
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                   <h3 className="font-bold text-gray-900 mb-4">Quick Stats</h3>
-                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="p-4 bg-gray-50 rounded-xl">
-                         <p className="text-xs font-bold text-gray-400 uppercase">Total Orders</p>
-                         <p className="text-3xl font-bold text-amber-600">{data.orders.length}</p>
-                      </div>
-                      <div className="p-4 bg-gray-50 rounded-xl">
-                         <p className="text-xs font-bold text-gray-400 uppercase">Reservations</p>
-                         <p className="text-3xl font-bold text-amber-600">{data.bookings.length}</p>
-                      </div>
-                      <div className="p-4 bg-gray-50 rounded-xl">
-                         <p className="text-xs font-bold text-gray-400 uppercase">Total Messages</p>
-                         <p className="text-3xl font-bold text-amber-600">{data.messages.length}</p>
-                      </div>
-                      <div className="p-4 bg-gray-50 rounded-xl">
-                         <p className="text-xs font-bold text-gray-400 uppercase">Unread Messages</p>
-                         <p className="text-3xl font-bold text-amber-600">{data.messages.filter(m => !m.isRead).length}</p>
-                      </div>
-                   </div>
-                   <div className="mt-6">
-                      <h4 className="text-sm font-bold text-gray-900 mb-3">Order Status Breakdown</h4>
-                      <div className="space-y-3">
-                        {Object.entries(orderStats).map(([status, count]) => {
-                          const width = data.orders.length ? Math.max(8, Math.round((count / data.orders.length) * 100)) : 0;
-                          return (
-                            <div key={status} className="space-y-2">
-                              <div className="flex items-center justify-between text-xs text-gray-500 uppercase font-semibold tracking-widest">
-                                <span>{status}</span>
-                                <span>{count}</span>
-                              </div>
-                              <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                                <div className={`h-full rounded-full ${status === 'completed' ? 'bg-green-500' : status === 'cancelled' ? 'bg-red-500' : status === 'preparing' ? 'bg-amber-500' : 'bg-blue-500'}`} style={{ width: `${width}%` }} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                   </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                   <h3 className="font-bold text-gray-900 mb-4">Cloud Connectivity</h3>
-                   <div className="space-y-3">
-                      <div className="flex justify-between items-center text-sm">
-                         <span className="text-gray-500">Backend API</span>
-                         <span className={`font-bold ${dbStatus.status === 'connected' ? 'text-green-600' : dbStatus.status === 'offline' ? 'text-red-500' : 'text-amber-500'}`}>
-                            {dbStatus.status.toUpperCase()}
-                         </span>
+                <div className="grid xl:grid-cols-3 gap-6">
+                  <div className="col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="font-bold text-gray-900">Order & Booking Analytics</h3>
+                        <p className="text-sm text-gray-500">Visualize recent performance at a glance.</p>
                       </div>
-                      <div className="flex justify-between items-center text-sm">
-                         <span className="text-gray-500">Aiven DB Sync</span>
-                         <span className={`font-bold ${dbStatus.status === 'connected' ? 'text-green-600' : 'text-gray-300'}`}>
-                            {dbStatus.status === 'connected' ? 'ACTIVE' : 'WAITING'}
-                         </span>
+                    </div>
+                    <div className="space-y-6">
+                      <div>
+                        <div className="flex items-center justify-between mb-3 text-xs uppercase tracking-widest text-gray-400 font-bold">
+                          <span>Order Status</span>
+                          <span>{data.orders.length} total</span>
+                        </div>
+                        <div className="space-y-3">
+                          {Object.entries(orderStats).map(([status, count]) => {
+                            const width = data.orders.length ? Math.max(6, Math.round((count / data.orders.length) * 100)) : 0;
+                            return (
+                              <div key={status}>
+                                <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+                                  <span>{status}</span>
+                                  <span>{count}</span>
+                                </div>
+                                <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
+                                  <div className={`h-full rounded-full ${status === 'completed' ? 'bg-green-500' : status === 'cancelled' ? 'bg-red-500' : status === 'preparing' ? 'bg-amber-500' : 'bg-blue-500'}`} style={{ width: `${width}%` }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center text-sm pt-2 border-t border-gray-50">
-                         <span className="text-gray-500">Sync Mode</span>
-                         <span className="text-amber-600 font-bold text-[10px] uppercase">
-                            {dbStatus.status === 'connected' ? 'Cloud Native' : 'Local Fallback'}
-                         </span>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-3 text-xs uppercase tracking-widest text-gray-400 font-bold">
+                          <span>Booking Status</span>
+                          <span>{data.bookings.length} total</span>
+                        </div>
+                        <div className="space-y-3">
+                          {Object.entries(bookingStats).map(([status, count]) => {
+                            const width = data.bookings.length ? Math.max(6, Math.round((count / data.bookings.length) * 100)) : 0;
+                            return (
+                              <div key={status}>
+                                <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+                                  <span>{status}</span>
+                                  <span>{count}</span>
+                                </div>
+                                <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
+                                  <div className={`h-full rounded-full ${status === 'confirmed' ? 'bg-green-500' : status === 'cancelled' ? 'bg-red-500' : 'bg-amber-500'}`} style={{ width: `${width}%` }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                   </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                    <h3 className="font-bold text-gray-900 mb-4">Message Response Track</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between text-xs uppercase tracking-widest text-gray-400 font-bold">
+                        <span>Replied</span>
+                        <span>{messageStats.replied}</span>
+                      </div>
+                      <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${data.messages.length ? Math.max(6, Math.round((messageStats.replied / data.messages.length) * 100)) : 0}%` }} />
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs uppercase tracking-widest text-gray-400 font-bold">
+                        <span>Awaiting reply</span>
+                        <span>{messageStats.awaiting}</span>
+                      </div>
+                      <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-full rounded-full bg-blue-500" style={{ width: `${data.messages.length ? Math.max(6, Math.round((messageStats.awaiting / data.messages.length) * 100)) : 0}%` }} />
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs uppercase tracking-widest text-gray-400 font-bold">
+                        <span>Unread</span>
+                        <span>{messageStats.unread}</span>
+                      </div>
+                      <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-full rounded-full bg-amber-500" style={{ width: `${data.messages.length ? Math.max(6, Math.round((messageStats.unread / data.messages.length) * 100)) : 0}%` }} />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

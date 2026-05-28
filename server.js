@@ -859,7 +859,7 @@ app.post("/api/messages/:id/reply", async (req, res) => {
       [reply.trim(), now, repliedBy, req.params.id]
     );
     const [rows] = await db.query(
-      "SELECT id, reply, reply_date AS replyDate FROM messages WHERE id = ?",
+      "SELECT id, reply, reply_date AS replyDate, replied_by AS repliedBy FROM messages WHERE id = ?",
       [req.params.id]
     );
     if (rows.length === 0) {

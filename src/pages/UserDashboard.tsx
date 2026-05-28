@@ -8,7 +8,7 @@ import AuthModal from '../components/AuthModal';
 
 const UserDashboard = () => {
   const { data, isUserLoggedIn, currentUser, logout } = useSiteData();
-  const [activeTab, setActiveTab] = useState<'orders' | 'bookings'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'bookings' | 'messages'>('orders');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -22,6 +22,7 @@ const UserDashboard = () => {
   // Filter global state for this specific user
   const userOrders = data.orders.filter(o => o.userId === currentUser?.email);
   const userBookings = data.bookings.filter(b => b.userId === currentUser?.email);
+  const userMessages = data.messages.filter(m => m.email === currentUser?.email);
 
   if (!isUserLoggedIn || !currentUser) {
     return (
@@ -92,6 +93,16 @@ const UserDashboard = () => {
                     <div className="flex items-center gap-4">
                        <Calendar className="h-5 w-5" />
                        <span>My Bookings</span>
+                    </div>
+                    <ChevronRight className="h-4 w-4" />
+                 </button>
+                 <button 
+                  onClick={() => setActiveTab('messages')}
+                  className={`w-full flex items-center justify-between p-6 rounded-[1.5rem] font-bold transition-all ${activeTab === 'messages' ? 'bg-amber-600 text-white shadow-xl shadow-amber-600/20' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
+                 >
+                    <div className="flex items-center gap-4">
+                       <Mail className="h-5 w-5" />
+                       <span>Messages</span>
                     </div>
                     <ChevronRight className="h-4 w-4" />
                  </button>
@@ -186,6 +197,50 @@ const UserDashboard = () => {
                               </div>
                            </div>
                          ))}
+                      </div>
+                    )}
+                 </div>
+               )}
+               {activeTab === 'messages' && (
+                 <div className="space-y-6">
+                    <h3 className="text-3xl font-serif font-bold text-gray-900 mb-8">Messages from Admin</h3>
+                    {userMessages.length === 0 ? (
+                      <div className="bg-white p-20 rounded-[3rem] text-center border border-gray-100">
+                         <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Mail className="h-10 w-10 text-gray-300" />
+                         </div>
+                         <h4 className="text-xl font-bold text-gray-900">No messages yet</h4>
+                         <p className="text-gray-500 mt-1">Replies to your inquiries will appear here.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {userMessages.map((msg) => (
+                          <div key={msg.id} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="text-xl font-bold text-gray-900">{msg.subject}</h4>
+                                <p className="text-gray-500 text-sm">Sent on {new Date(msg.date).toLocaleDateString()}</p>
+                              </div>
+                              <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${msg.isRead ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                                {msg.isRead ? 'Read' : 'Unread'}
+                              </span>
+                            </div>
+                            <div className="bg-gray-50 p-6 rounded-3xl text-gray-700 italic leading-relaxed">
+                              {msg.message}
+                            </div>
+                            {msg.reply ? (
+                              <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100">
+                                <p className="text-sm font-bold text-amber-900">Admin replied:</p>
+                                <p className="mt-2 text-gray-700">{msg.reply}</p>
+                                {msg.replyDate && <p className="text-[10px] text-gray-400 mt-3">Replied on {new Date(msg.replyDate).toLocaleString()}</p>}
+                              </div>
+                            ) : (
+                              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 text-gray-500">
+                                Awaiting a response from the admin.
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                  </div>
