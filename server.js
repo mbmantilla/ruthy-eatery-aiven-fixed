@@ -442,6 +442,8 @@ const initDb = async () => {
         reply LONGTEXT NULL,
         reply_date VARCHAR(100) NULL,
         replied_by VARCHAR(255) NULL,
+        follow_up LONGTEXT NULL,
+        follow_up_date VARCHAR(100) NULL,
         date VARCHAR(100),
         is_read TINYINT(1) DEFAULT 0
       )
@@ -450,6 +452,8 @@ const initDb = async () => {
     await addColumnIfMissing("messages", "reply", "LONGTEXT NULL");
     await addColumnIfMissing("messages", "reply_date", "VARCHAR(100) NULL");
     await addColumnIfMissing("messages", "replied_by", "VARCHAR(255) NULL");
+    await addColumnIfMissing("messages", "follow_up", "LONGTEXT NULL");
+    await addColumnIfMissing("messages", "follow_up_date", "VARCHAR(100) NULL");
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS bookings (
@@ -560,7 +564,7 @@ const readSiteData = async () => {
     "SELECT email, name, role, registered_at AS registeredAt FROM users ORDER BY registered_at ASC, name ASC"
   );
   const [messages] = await db.query(
-    "SELECT id, name, email, subject, message, reply, reply_date AS replyDate, replied_by AS repliedBy, date, is_read AS isRead FROM messages ORDER BY date DESC"
+    "SELECT id, name, email, subject, message, reply, reply_date AS replyDate, replied_by AS repliedBy, follow_up AS followUp, follow_up_date AS followUpDate, date, is_read AS isRead FROM messages ORDER BY date DESC"
   );
   const [bookings] = await db.query(
     `SELECT id, user_id AS userId, name, email, phone, booking_date AS date,
@@ -583,6 +587,9 @@ const readSiteData = async () => {
     ...message,
     reply: message.reply || undefined,
     replyDate: message.replyDate || undefined,
+    repliedBy: message.repliedBy || undefined,
+    followUp: message.followUp || undefined,
+    followUpDate: message.followUpDate || undefined,
     isRead: Boolean(message.isRead),
   }));
 
@@ -664,8 +671,8 @@ const persistFullSiteData = async (incoming) => {
     for (const message of data.messages) {
       if (!message.id) continue;
       await connection.query(
-        `INSERT INTO messages (id, name, email, subject, message, reply, reply_date, replied_by, date, is_read)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO messages (id, name, email, subject, message, reply, reply_date, replied_by, follow_up, follow_up_date, date, is_read)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           message.id,
           message.name || "Guest",
@@ -675,6 +682,8 @@ const persistFullSiteData = async (incoming) => {
           message.reply || null,
           message.replyDate || null,
           message.repliedBy || null,
+          message.followUp || null,
+          message.followUpDate || null,
           message.date || new Date().toISOString(),
           message.isRead ? 1 : 0,
         ]
@@ -860,6 +869,31 @@ app.post("/api/messages/:id/reply", async (req, res) => {
     );
     const [rows] = await db.query(
       "SELECT id, reply, reply_date AS replyDate, replied_by AS repliedBy FROM messages WHERE id = ?",
+      [req.params.id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Message not found." });
+    }
+    res.json({ success: true, ...rows[0] });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+app.post("/api/messages/:id/respond", async (req, res) => {
+  try {
+    const { followUp } = req.body || {};
+    if (!followUp || typeof followUp !== "string" || !followUp.trim()) {
+      return res.status(400).json({ error: "Follow-up message is required." });
+    }
+    const db = requireDb();
+    const now = new Date().toISOString();
+    await db.query(
+      "UPDATE messages SET follow_up = ?, follow_up_date = ?, is_read = 0 WHERE id = ?",
+      [followUp.trim(), now, req.params.id]
+    );
+    const [rows] = await db.query(
+      "SELECT id, follow_up AS followUp, follow_up_date AS followUpDate FROM messages WHERE id = ?",
       [req.params.id]
     );
     if (rows.length === 0) {

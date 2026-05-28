@@ -24,6 +24,8 @@ export interface SiteMessage {
   reply?: string;
   replyDate?: string;
   repliedBy?: string;
+  followUp?: string;
+  followUpDate?: string;
   date: string;
   isRead: boolean;
 }
@@ -180,6 +182,7 @@ interface SiteContextType {
   addOrder: (order: Omit<SiteOrder, 'id' | 'status' | 'createdAt'>) => Promise<SiteOrder>;
   updateOrderStatus: (id: string, status: SiteOrder['status']) => Promise<void>;
   replyToMessage: (id: string, reply: string) => Promise<void>;
+  respondToMessage: (id: string, followUp: string) => Promise<void>;
   addUser: (user: Omit<SiteUser, 'registeredAt'>) => Promise<void>;
   updateUser: (email: string, updates: Partial<SiteUser>) => Promise<void>;
   deleteUser: (email: string) => Promise<void>;
@@ -316,6 +319,14 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setData({ ...data, messages: updatedMessages });
   };
 
+  const respondToMessage = async (id: string, followUp: string) => {
+    const result = await backendService.respondToMessage(id, followUp);
+    const updatedMessages = data.messages.map(m =>
+      m.id === id ? { ...m, followUp: result.followUp, followUpDate: result.followUpDate, isRead: false } : m
+    );
+    setData({ ...data, messages: updatedMessages });
+  };
+
   const addUser = async (user: Omit<SiteUser, 'registeredAt'>) => {
     const newUser: SiteUser = {
       ...user,
@@ -386,6 +397,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       markMessageAsRead, 
       deleteMessage,
       replyToMessage,
+      respondToMessage,
       addBooking,
       updateBookingStatus,
       addOrder,

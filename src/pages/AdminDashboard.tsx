@@ -757,6 +757,13 @@ const AdminDashboard = () => {
                                 {msg.replyDate && <p className="text-[10px] text-gray-400 mt-2">Replied on {new Date(msg.replyDate).toLocaleString()}</p>}
                               </div>
                             )}
+                            {msg.followUp && (
+                              <div className="bg-white p-6 rounded-2xl text-gray-700 border border-gray-200 shadow-sm">
+                                <p className="text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Customer follow-up</p>
+                                <p className="text-sm leading-relaxed">{msg.followUp}</p>
+                                {msg.followUpDate && <p className="text-[10px] text-gray-400 mt-2">Sent on {new Date(msg.followUpDate).toLocaleString()}</p>}
+                              </div>
+                            )}
                             <div className="space-y-3">
                               <textarea
                                 value={messageReplyDraft[msg.id] || ''}

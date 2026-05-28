@@ -7,8 +7,9 @@ import Footer from '../components/Footer';
 import AuthModal from '../components/AuthModal';
 
 const UserDashboard = () => {
-  const { data, isUserLoggedIn, currentUser, logout } = useSiteData();
+  const { data, isUserLoggedIn, currentUser, logout, respondToMessage } = useSiteData();
   const [activeTab, setActiveTab] = useState<'orders' | 'bookings' | 'messages'>('orders');
+  const [messageResponseDraft, setMessageResponseDraft] = useState<Record<string, string>>({});
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -239,6 +240,34 @@ const UserDashboard = () => {
                                 Awaiting a response from the admin.
                               </div>
                             )}
+                            {msg.followUp && (
+                              <div className="bg-white p-6 rounded-3xl border border-gray-200">
+                                <p className="text-sm font-bold text-gray-900">Your follow-up:</p>
+                                <p className="mt-2 text-gray-700">{msg.followUp}</p>
+                                {msg.followUpDate && <p className="text-[10px] text-gray-400 mt-3">Sent on {new Date(msg.followUpDate).toLocaleString()}</p>}
+                              </div>
+                            )}
+                            <div className="bg-white p-6 rounded-3xl border border-gray-100">
+                              <label className="block text-sm font-bold text-gray-600 mb-2">Reply to admin</label>
+                              <textarea
+                                value={messageResponseDraft[msg.id] || ''}
+                                onChange={(e) => setMessageResponseDraft((prev) => ({ ...prev, [msg.id]: e.target.value }))}
+                                placeholder="Write your follow-up message here..."
+                                className="w-full min-h-[130px] rounded-3xl border border-gray-200 p-4 focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none transition-all"
+                              />
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const followUp = (messageResponseDraft[msg.id] || '').trim();
+                                  if (!followUp) return;
+                                  await respondToMessage(msg.id, followUp);
+                                  setMessageResponseDraft((prev) => ({ ...prev, [msg.id]: '' }));
+                                }}
+                                className="mt-4 inline-flex items-center justify-center rounded-full bg-amber-600 px-6 py-3 font-bold text-white hover:bg-amber-700 transition-colors"
+                              >
+                                Send follow-up
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>

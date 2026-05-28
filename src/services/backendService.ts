@@ -91,5 +91,15 @@ export const backendService = {
     return await parseJsonResponse(response);
   },
 
+  respondToMessage: async (id: string, followUp: string) => {
+    if (!id) throw new Error('Message id is required');
+    const response = await fetch(`${API_URL}/messages/${encodeURIComponent(id)}/respond`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ followUp }),
+    });
+    return await parseJsonResponse(response);
+  },
+
   uploadImage: async (base64: string) => ({ url: base64 }),
 };
