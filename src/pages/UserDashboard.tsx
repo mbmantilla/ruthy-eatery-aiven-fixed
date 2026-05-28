@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSiteData } from '../context/SiteContext';
-import { ShoppingBag, Calendar, User, Package, ChevronRight, Home, LogOut, Clock, MapPin } from 'lucide-react';
+import { ShoppingBag, Calendar, User, Mail, Package, ChevronRight, Home, LogOut, Clock, MapPin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
