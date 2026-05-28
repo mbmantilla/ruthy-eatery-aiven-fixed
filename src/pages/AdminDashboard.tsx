@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSiteData, MenuItem } from '../context/SiteContext';
 import { 
   LayoutDashboard, 
@@ -144,6 +144,7 @@ const AdminDashboard = () => {
     resetToDefault,
     markMessageAsRead,
     deleteMessage,
+    replyToMessage,
     updateBookingStatus,
     updateOrderStatus,
     addUser,
@@ -167,11 +168,30 @@ const AdminDashboard = () => {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUserEmail, setEditingUserEmail] = useState<string | null>(null);
   const [userFormData, setUserFormData] = useState({ name: '', email: '', role: 'user' as 'user' | 'admin' });
+  const [bookingPage, setBookingPage] = useState(1);
+  const [messageReplyDraft, setMessageReplyDraft] = useState<Record<string, string>>({});
   
   const [activeCategoryIdx, setActiveCategoryIdx] = useState<number | null>(null);
   const [newItem, setNewItem] = useState<MenuItem>({ name: '', description: '', price: '₱', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80' });
   const [expandedCategories, setExpandedCategories] = useState<Record<number, boolean>>({ 0: true });
   const navigate = useNavigate();
+
+  const bookingsPerPage = 10;
+  const totalBookingPages = Math.max(1, Math.ceil(data.bookings.length / bookingsPerPage));
+  const currentBookingPage = Math.min(bookingPage, totalBookingPages);
+  const pageBookings = useMemo(() => data.bookings.slice((currentBookingPage - 1) * bookingsPerPage, currentBookingPage * bookingsPerPage), [data.bookings, currentBookingPage]);
+  const orderStats = useMemo(() => ({
+    pending: data.orders.filter((o) => o.status === 'pending').length,
+    preparing: data.orders.filter((o) => o.status === 'preparing').length,
+    completed: data.orders.filter((o) => o.status === 'completed').length,
+    cancelled: data.orders.filter((o) => o.status === 'cancelled').length,
+  }), [data.orders]);
+
+  useEffect(() => {
+    if (bookingPage > totalBookingPages) {
+      setBookingPage(totalBookingPages);
+    }
+  }, [bookingPage, totalBookingPages]);
 
   const openAddUserModal = () => {
     setEditingUserEmail(null);
@@ -430,17 +450,16 @@ const AdminDashboard = () => {
                                   <Phone className="h-3 w-3" /> {order.phone} • {order.type.toUpperCase()}
                                </p>
                             </div>
-                            <div className="flex items-center gap-3">
-                               <select 
-                                 value={order.status}
-                                 onChange={(e) => updateOrderStatus(order.id, e.target.value as any)}
-                                 className="bg-gray-50 border-none rounded-xl font-bold text-sm px-4 py-2"
-                               >
-                                  <option value="pending">Pending</option>
-                                  <option value="preparing">Preparing</option>
-                                  <option value="completed">Completed</option>
-                                  <option value="cancelled">Cancelled</option>
-                               </select>
+                            <div className="flex flex-wrap gap-2">
+                               {(['pending','preparing','completed','cancelled'] as const).map((status) => (
+                                 <button
+                                   key={status}
+                                   onClick={() => updateOrderStatus(order.id, status)}
+                                   className={`px-3 py-2 rounded-2xl text-xs font-bold transition-all ${order.status === status ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                 >
+                                   {status}
+                                 </button>
+                               ))}
                             </div>
                          </div>
 
@@ -593,7 +612,7 @@ const AdminDashboard = () => {
                         <p className="text-gray-400 font-bold">No reservations found.</p>
                      </div>
                    ) : (
-                     data.bookings.map(booking => (
+                     pageBookings.map(booking => (
                        <div key={booking.id} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6 relative overflow-hidden">
                           <div className={`absolute top-0 left-0 w-full h-1 ${
                             booking.status === 'confirmed' ? 'bg-green-500' : booking.status === 'cancelled' ? 'bg-red-400' : 'bg-amber-400'
@@ -642,6 +661,25 @@ const AdminDashboard = () => {
                      ))
                    )}
                 </div>
+                {data.bookings.length > bookingsPerPage && (
+                  <div className="flex items-center justify-between mt-6">
+                    <button
+                      onClick={() => setBookingPage((prev) => Math.max(1, prev - 1))}
+                      disabled={currentBookingPage === 1}
+                      className="px-5 py-3 rounded-2xl bg-gray-100 text-gray-600 font-bold disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+                    <div className="text-sm text-gray-500">Page {currentBookingPage} of {totalBookingPages}</div>
+                    <button
+                      onClick={() => setBookingPage((prev) => Math.min(totalBookingPages, prev + 1))}
+                      disabled={currentBookingPage === totalBookingPages}
+                      className="px-5 py-3 rounded-2xl bg-amber-600 text-white font-bold disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -678,41 +716,68 @@ const AdminDashboard = () => {
                         )}
                         
                         <div className="flex flex-col md:flex-row gap-6">
-                           <div className="flex-1 space-y-4">
-                              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                 <div>
-                                    <h4 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                       {msg.subject}
-                                       {!msg.isRead && <span className="bg-amber-500 text-white text-[10px] uppercase px-2 py-0.5 rounded-full">New</span>}
-                                    </h4>
-                                    <p className="text-amber-600 font-bold text-sm">From: {msg.name} ({msg.email})</p>
-                                 </div>
-                                 <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase tracking-widest bg-gray-50 px-3 py-1.5 rounded-lg">
-                                    <Clock className="h-3.5 w-3.5" />
-                                    {msg.date}
-                                 </div>
+                          <div className="flex-1 space-y-4">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div>
+                                <h4 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                  {msg.subject}
+                                  {!msg.isRead && <span className="bg-amber-500 text-white text-[10px] uppercase px-2 py-0.5 rounded-full">New</span>}
+                                </h4>
+                                <p className="text-amber-600 font-bold text-sm">From: {msg.name} ({msg.email})</p>
                               </div>
-                              <div className="bg-gray-50 p-6 rounded-2xl text-gray-700 italic leading-relaxed text-lg border-l-4 border-gray-200">
-                                 "{msg.message}"
+                              <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase tracking-widest bg-gray-50 px-3 py-1.5 rounded-lg">
+                                <Clock className="h-3.5 w-3.5" />
+                                {msg.date}
                               </div>
-                           </div>
-                           
-                           <div className="flex md:flex-col gap-3 justify-end">
-                              {!msg.isRead && (
-                                <button 
-                                  onClick={() => markMessageAsRead(msg.id)}
-                                  className="flex items-center justify-center gap-2 bg-amber-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs hover:bg-amber-600 transition-colors"
+                            </div>
+                            <div className="bg-gray-50 p-6 rounded-2xl text-gray-700 italic leading-relaxed text-lg border-l-4 border-gray-200">
+                              "{msg.message}"
+                            </div>
+                            {msg.reply && (
+                              <div className="bg-emerald-50 p-6 rounded-2xl text-emerald-800 border border-emerald-100 shadow-sm">
+                                <p className="text-xs uppercase tracking-widest text-emerald-600 font-bold mb-2">Reply Sent</p>
+                                <p className="text-sm leading-relaxed">{msg.reply}</p>
+                                {msg.replyDate && <p className="text-[10px] text-gray-400 mt-2">Replied on {new Date(msg.replyDate).toLocaleString()}</p>}
+                              </div>
+                            )}
+                            <div className="space-y-3">
+                              <textarea
+                                value={messageReplyDraft[msg.id] || ''}
+                                onChange={(e) => setMessageReplyDraft((prev) => ({ ...prev, [msg.id]: e.target.value }))}
+                                className="w-full min-h-[120px] rounded-3xl border border-gray-200 p-4 text-sm text-gray-700 focus:ring-2 focus:ring-amber-500/20 outline-none"
+                                placeholder="Reply to this customer..."
+                              />
+                              <div className="flex items-center justify-end gap-3">
+                                <button
+                                  onClick={async () => {
+                                    const reply = messageReplyDraft[msg.id]?.trim() || '';
+                                    if (!reply) return;
+                                    await replyToMessage(msg.id, reply);
+                                    setMessageReplyDraft((prev) => ({ ...prev, [msg.id]: '' }));
+                                  }}
+                                  className="bg-amber-600 text-white px-4 py-3 rounded-2xl text-xs font-bold hover:bg-amber-700 transition-colors"
                                 >
-                                  <Check className="h-4 w-4" /> Mark Read
+                                  Send Reply
                                 </button>
-                              )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex md:flex-col gap-3 justify-end">
+                            {!msg.isRead && (
                               <button 
-                                onClick={() => { if(confirm('Delete this message?')) deleteMessage(msg.id); }}
-                                className="flex items-center justify-center gap-2 bg-red-50 text-red-500 px-4 py-2.5 rounded-xl font-bold text-xs hover:bg-red-500 hover:text-white transition-all border border-red-100"
+                                onClick={() => markMessageAsRead(msg.id)}
+                                className="flex items-center justify-center gap-2 bg-amber-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs hover:bg-amber-600 transition-colors"
                               >
-                                <Trash2 className="h-4 w-4" /> Delete
+                                <Check className="h-4 w-4" /> Mark Read
                               </button>
-                           </div>
+                            )}
+                            <button 
+                              onClick={() => { if(confirm('Delete this message?')) deleteMessage(msg.id); }}
+                              className="flex items-center justify-center gap-2 bg-red-50 text-red-500 px-4 py-2.5 rounded-xl font-bold text-xs hover:bg-red-500 hover:text-white transition-all border border-red-100"
+                            >
+                              <Trash2 className="h-4 w-4" /> Delete
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))
@@ -740,20 +805,39 @@ const AdminDashboard = () => {
                    <h3 className="font-bold text-gray-900 mb-4">Quick Stats</h3>
                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="p-4 bg-gray-50 rounded-xl">
-                         <p className="text-xs font-bold text-gray-400 uppercase">Menu Items</p>
-                         <p className="text-3xl font-bold text-amber-600">{data.menu.reduce((acc, cat) => acc + cat.items.length, 0)}</p>
+                         <p className="text-xs font-bold text-gray-400 uppercase">Total Orders</p>
+                         <p className="text-3xl font-bold text-amber-600">{data.orders.length}</p>
                       </div>
                       <div className="p-4 bg-gray-50 rounded-xl">
-                         <p className="text-xs font-bold text-gray-400 uppercase">Categories</p>
-                         <p className="text-3xl font-bold text-amber-600">{data.menu.length}</p>
+                         <p className="text-xs font-bold text-gray-400 uppercase">Reservations</p>
+                         <p className="text-3xl font-bold text-amber-600">{data.bookings.length}</p>
                       </div>
                       <div className="p-4 bg-gray-50 rounded-xl">
-                         <p className="text-xs font-bold text-gray-400 uppercase">Inbox</p>
+                         <p className="text-xs font-bold text-gray-400 uppercase">Total Messages</p>
                          <p className="text-3xl font-bold text-amber-600">{data.messages.length}</p>
                       </div>
                       <div className="p-4 bg-gray-50 rounded-xl">
-                         <p className="text-xs font-bold text-gray-400 uppercase">Unread</p>
+                         <p className="text-xs font-bold text-gray-400 uppercase">Unread Messages</p>
                          <p className="text-3xl font-bold text-amber-600">{data.messages.filter(m => !m.isRead).length}</p>
+                      </div>
+                   </div>
+                   <div className="mt-6">
+                      <h4 className="text-sm font-bold text-gray-900 mb-3">Order Status Breakdown</h4>
+                      <div className="space-y-3">
+                        {Object.entries(orderStats).map(([status, count]) => {
+                          const width = data.orders.length ? Math.max(8, Math.round((count / data.orders.length) * 100)) : 0;
+                          return (
+                            <div key={status} className="space-y-2">
+                              <div className="flex items-center justify-between text-xs text-gray-500 uppercase font-semibold tracking-widest">
+                                <span>{status}</span>
+                                <span>{count}</span>
+                              </div>
+                              <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                                <div className={`h-full rounded-full ${status === 'completed' ? 'bg-green-500' : status === 'cancelled' ? 'bg-red-500' : status === 'preparing' ? 'bg-amber-500' : 'bg-blue-500'}`} style={{ width: `${width}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                    </div>
                 </div>
@@ -1274,6 +1358,18 @@ const AdminDashboard = () => {
                       className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500/20 outline-none min-h-[100px]"
                     />
                   </div>
+                </div>
+                <div className="bg-gray-50 rounded-3xl overflow-hidden border border-gray-200">
+                  <div className="px-6 py-5 border-b border-gray-200 bg-white">
+                    <h3 className="font-bold text-gray-900">Location Map</h3>
+                    <p className="text-sm text-gray-500 mt-1">Displays the current business address from your contact settings.</p>
+                  </div>
+                  <iframe
+                    title="Business location map"
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(data.contact.address)}&output=embed`}
+                    className="w-full h-80 border-0"
+                    loading="lazy"
+                  />
                 </div>
               </div>
             )}

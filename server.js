@@ -439,10 +439,17 @@ const initDb = async () => {
         email VARCHAR(255) NOT NULL,
         subject VARCHAR(255) NOT NULL,
         message TEXT NOT NULL,
+        reply LONGTEXT NULL,
+        reply_date VARCHAR(100) NULL,
+        replied_by VARCHAR(255) NULL,
         date VARCHAR(100),
         is_read TINYINT(1) DEFAULT 0
       )
     `);
+
+    await addColumnIfMissing("messages", "reply", "LONGTEXT NULL");
+    await addColumnIfMissing("messages", "reply_date", "VARCHAR(100) NULL");
+    await addColumnIfMissing("messages", "replied_by", "VARCHAR(255) NULL");
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS bookings (
@@ -553,7 +560,7 @@ const readSiteData = async () => {
     "SELECT email, name, role, registered_at AS registeredAt FROM users ORDER BY registered_at ASC, name ASC"
   );
   const [messages] = await db.query(
-    "SELECT id, name, email, subject, message, date, is_read AS isRead FROM messages ORDER BY date DESC"
+    "SELECT id, name, email, subject, message, reply, reply_date AS replyDate, replied_by AS repliedBy, date, is_read AS isRead FROM messages ORDER BY date DESC"
   );
   const [bookings] = await db.query(
     `SELECT id, user_id AS userId, name, email, phone, booking_date AS date,
@@ -574,6 +581,8 @@ const readSiteData = async () => {
 
   data.messages = messages.map((message) => ({
     ...message,
+    reply: message.reply || undefined,
+    replyDate: message.replyDate || undefined,
     isRead: Boolean(message.isRead),
   }));
 
@@ -655,14 +664,17 @@ const persistFullSiteData = async (incoming) => {
     for (const message of data.messages) {
       if (!message.id) continue;
       await connection.query(
-        `INSERT INTO messages (id, name, email, subject, message, date, is_read)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO messages (id, name, email, subject, message, reply, reply_date, replied_by, date, is_read)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           message.id,
           message.name || "Guest",
           message.email || "",
           message.subject || "No subject",
           message.message || "",
+          message.reply || null,
+          message.replyDate || null,
+          message.repliedBy || null,
           message.date || new Date().toISOString(),
           message.isRead ? 1 : 0,
         ]
@@ -787,6 +799,113 @@ app.post("/api/data", async (req, res) => {
   }
 });
 
+app.patch("/api/orders/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body || {};
+    const allowed = ["pending", "preparing", "completed", "cancelled"];
+    if (!status || !allowed.includes(status)) {
+      return res.status(400).json({ error: "Invalid order status." });
+    }
+    const db = requireDb();
+    await db.query("UPDATE orders SET status = ? WHERE id = ?", [status, req.params.id]);
+    const [rows] = await db.query(
+      `SELECT id, user_id AS userId, customer_name AS customerName, phone, order_type AS type, address, items_json AS itemsJson, total, status, created_at AS createdAt
+       FROM orders WHERE id = ?`,
+      [req.params.id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Order not found." });
+    }
+    res.json({ success: true, order: rows[0] });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+app.patch("/api/bookings/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body || {};
+    const allowed = ["pending", "confirmed", "cancelled"];
+    if (!status || !allowed.includes(status)) {
+      return res.status(400).json({ error: "Invalid booking status." });
+    }
+    const db = requireDb();
+    await db.query("UPDATE bookings SET status = ? WHERE id = ?", [status, req.params.id]);
+    const [rows] = await db.query(
+      `SELECT id, user_id AS userId, name, email, phone, booking_date AS date, booking_time AS time, guests, status, created_at AS createdAt
+       FROM bookings WHERE id = ?`,
+      [req.params.id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Booking not found." });
+    }
+    res.json({ success: true, booking: rows[0] });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+app.post("/api/messages/:id/reply", async (req, res) => {
+  try {
+    const { reply } = req.body || {};
+    if (!reply || typeof reply !== "string" || !reply.trim()) {
+      return res.status(400).json({ error: "Reply text is required." });
+    }
+    const db = requireDb();
+    const now = new Date().toISOString();
+    const repliedBy = process.env.ADMIN_EMAIL || "admin";
+    await db.query(
+      "UPDATE messages SET reply = ?, reply_date = ?, replied_by = ?, is_read = 1 WHERE id = ?",
+      [reply.trim(), now, repliedBy, req.params.id]
+    );
+    const [rows] = await db.query(
+      "SELECT id, reply, reply_date AS replyDate FROM messages WHERE id = ?",
+      [req.params.id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Message not found." });
+    }
+    res.json({ success: true, ...rows[0] });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+app.get("/api/bookings", async (req, res) => {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(50, Number(req.query.limit) || 10);
+    const offset = (page - 1) * limit;
+    const db = requireDb();
+    const [rows] = await db.query(
+      `SELECT id, user_id AS userId, name, email, phone, booking_date AS date, booking_time AS time, guests, status, created_at AS createdAt
+       FROM bookings ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+    const [[{ total }]] = await db.query("SELECT COUNT(*) AS total FROM bookings");
+    res.json({ success: true, bookings: rows, total, page, limit });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+app.get("/api/stats", async (_req, res) => {
+  try {
+    const db = requireDb();
+    const [orderRows] = await db.query("SELECT status, COUNT(*) AS count FROM orders GROUP BY status");
+    const [bookingRows] = await db.query("SELECT status, COUNT(*) AS count FROM bookings GROUP BY status");
+    const [messageRows] = await db.query("SELECT COUNT(*) AS total, SUM(is_read = 0) AS unread FROM messages");
+    res.json({
+      success: true,
+      orders: orderRows,
+      bookings: bookingRows,
+      messages: messageRows[0] || { total: 0, unread: 0 },
+    });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
 app.post("/api/auth/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body || {};
@@ -845,4 +964,12 @@ app.get("*", (_req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Ruthy Eatery server running on port ${PORT}`));
+const server = app.listen(PORT, () => console.log(`Ruthy Eatery server running on port ${PORT}`));
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Stop the existing server or set PORT to a free port before retrying.`);
+  } else {
+    console.error('Server failed to start:', err);
+  }
+  process.exit(1);
+});

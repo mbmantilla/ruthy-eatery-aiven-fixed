@@ -21,6 +21,9 @@ export interface SiteMessage {
   email: string;
   subject: string;
   message: string;
+  reply?: string;
+  replyDate?: string;
+  repliedBy?: string;
   date: string;
   isRead: boolean;
 }
@@ -176,6 +179,7 @@ interface SiteContextType {
   updateBookingStatus: (id: string, status: SiteBooking['status']) => Promise<void>;
   addOrder: (order: Omit<SiteOrder, 'id' | 'status' | 'createdAt'>) => Promise<SiteOrder>;
   updateOrderStatus: (id: string, status: SiteOrder['status']) => Promise<void>;
+  replyToMessage: (id: string, reply: string) => Promise<void>;
   addUser: (user: Omit<SiteUser, 'registeredAt'>) => Promise<void>;
   updateUser: (email: string, updates: Partial<SiteUser>) => Promise<void>;
   deleteUser: (email: string) => Promise<void>;
@@ -281,9 +285,9 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateBookingStatus = async (id: string, status: SiteBooking['status']) => {
+    await backendService.updateBookingStatus(id, status);
     const updatedBookings = data.bookings.map(b => b.id === id ? { ...b, status } : b);
-    const updated = { ...data, bookings: updatedBookings };
-    await persistData(updated);
+    setData({ ...data, bookings: updatedBookings });
   };
 
   const addOrder = async (order: Omit<SiteOrder, 'id' | 'status' | 'createdAt'>) => {
@@ -299,9 +303,17 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateOrderStatus = async (id: string, status: SiteOrder['status']) => {
+    await backendService.updateOrderStatus(id, status);
     const updatedOrders = data.orders.map(o => o.id === id ? { ...o, status } : o);
-    const updated = { ...data, orders: updatedOrders };
-    await persistData(updated);
+    setData({ ...data, orders: updatedOrders });
+  };
+
+  const replyToMessage = async (id: string, reply: string) => {
+    const result = await backendService.replyMessage(id, reply);
+    const updatedMessages = data.messages.map(m =>
+      m.id === id ? { ...m, reply: result.reply, replyDate: result.replyDate, isRead: true } : m
+    );
+    setData({ ...data, messages: updatedMessages });
   };
 
   const addUser = async (user: Omit<SiteUser, 'registeredAt'>) => {
@@ -373,6 +385,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addMessage, 
       markMessageAsRead, 
       deleteMessage,
+      replyToMessage,
       addBooking,
       updateBookingStatus,
       addOrder,

@@ -61,5 +61,35 @@ export const backendService = {
     return await parseJsonResponse(response);
   },
 
+  updateOrderStatus: async (id: string, status: string) => {
+    if (!id) throw new Error('Order id is required');
+    const response = await fetch(`${API_URL}/orders/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    return await parseJsonResponse(response);
+  },
+
+  updateBookingStatus: async (id: string, status: string) => {
+    if (!id) throw new Error('Booking id is required');
+    const response = await fetch(`${API_URL}/bookings/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    return await parseJsonResponse(response);
+  },
+
+  replyMessage: async (id: string, reply: string) => {
+    if (!id) throw new Error('Message id is required');
+    const response = await fetch(`${API_URL}/messages/${encodeURIComponent(id)}/reply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reply }),
+    });
+    return await parseJsonResponse(response);
+  },
+
   uploadImage: async (base64: string) => ({ url: base64 }),
 };
