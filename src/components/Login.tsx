@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSiteData } from '../context/SiteContext';
 import { Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
 
 const Login = () => {
+  const navigate = useNavigate();
   const { login } = useSiteData();
   const [email, setEmail] = useState('admin@gmail.com');
   const [password, setPassword] = useState('');
@@ -21,10 +23,12 @@ const Login = () => {
     setError('');
 
     const success = await login(email, password);
-    if (!success) {
+    if (success) {
+      navigate('/dashboard');
+    } else {
       setError('Invalid email or password. Make sure your account is registered.');
-      setIsLoading(false);
     }
+    setIsLoading(false);
   };
 
   return (

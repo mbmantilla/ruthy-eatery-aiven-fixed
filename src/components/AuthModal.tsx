@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, LogIn, UserPlus, Mail, User, Lock, ArrowRight } from 'lucide-react';
 import { useSiteData } from '../context/SiteContext';
@@ -10,6 +11,7 @@ interface AuthModalProps {
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
+  const navigate = useNavigate();
   const { login } = useSiteData();
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
@@ -43,6 +45,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode = 'l
     if (success) {
       setFormData({ name: '', email: '', password: '' });
       onClose();
+      navigate('/dashboard');
     } else {
       if (mode === 'login') {
         setError('Invalid email or password. Please check your credentials or create an account.');
