@@ -424,6 +424,8 @@ const initDb = async () => {
       )
     `);
 
+    await addColumnIfMissing("users", "name", "VARCHAR(255) NOT NULL DEFAULT 'Guest'");
+    await addColumnIfMissing("users", "role", "VARCHAR(50) NOT NULL DEFAULT 'user'");
     await addColumnIfMissing("users", "password_hash", "VARCHAR(255) NULL");
     await addColumnIfMissing("users", "registered_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
 
