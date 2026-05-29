@@ -209,7 +209,7 @@ const AdminDashboard = () => {
     awaiting: data.messages.filter((m) => !m.reply).length,
     unread: data.messages.filter((m) => !m.isRead).length,
   }), [data.messages]);
-  const totalRevenue = useMemo(() => data.orders.reduce((sum, order) => sum + Number(order.total || 0), 0), [data.orders]);
+  const totalRevenue = useMemo(() => data.orders.filter(o => o.paymentStatus === 'paid' || o.isPaid === true).reduce((sum, order) => sum + Number(order.total || 0), 0), [data.orders]);
 
   const revenueTrendData = useMemo(() => {
     const today = new Date();
@@ -581,7 +581,7 @@ const AdminDashboard = () => {
                               </div>
                             ))}
                             <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-                               <span className="font-bold text-gray-900">Total Revenue</span>
+                               <span className="font-bold text-gray-900">Total to Pay</span>
                                <span className="text-xl font-bold text-amber-600">₱{order.total.toLocaleString()}</span>
                             </div>
                          </div>
@@ -823,7 +823,19 @@ const AdminDashboard = () => {
                                   {msg.subject}
                                   {!msg.isRead && <span className="bg-amber-500 text-white text-[10px] uppercase px-2 py-0.5 rounded-full">New</span>}
                                 </h4>
-                                <p className="text-amber-600 font-bold text-sm">From: {msg.name} ({msg.email})</p>
+                                <p className="text-amber-600 font-bold text-sm">From: {msg.name} ({msg.email})
+
+<button
+  onClick={() => handleMarkOrderAsPaid(order.id)}
+  disabled={order.paymentStatus === 'paid' || order.isPaid === true}
+  className={`px-3 py-2 rounded-2xl text-xs font-bold transition-all ${
+    order.paymentStatus === 'paid' || order.isPaid === true
+      ? 'bg-green-600 text-white cursor-default'
+      : 'bg-green-100 text-green-700 hover:bg-green-600 hover:text-white'
+  }`}
+>
+  {order.paymentStatus === 'paid' || order.isPaid === true ? 'Paid' : 'Mark as Paid'}
+</button></p>
                               </div>
                               <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase tracking-widest bg-gray-50 px-3 py-1.5 rounded-lg">
                                 <Clock className="h-3.5 w-3.5" />
@@ -903,7 +915,7 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex flex-wrap gap-4">
                       <div className="rounded-3xl bg-white/10 px-5 py-4">
-                        <p className="text-xs uppercase tracking-widest opacity-80">Total Revenue</p>
+                        <p className="text-xs uppercase tracking-widest opacity-80">Total to Pay</p>
                         <p className="text-3xl font-bold">₱{totalRevenue.toLocaleString()}</p>
                       </div>
                       <div className="rounded-3xl bg-white/10 px-5 py-4">
