@@ -41,6 +41,7 @@ export interface SiteBooking {
   guests: number;
   status: 'pending' | 'confirmed' | 'cancelled';
   createdAt: string;
+  referenceNumber?: string;
 }
 
 export interface SiteOrder {
@@ -294,7 +295,8 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...booking,
       id: 'BK-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
       status: 'pending',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      referenceNumber: booking.referenceNumber,
     };
     const updated = { ...data, bookings: [newBooking, ...data.bookings] };
     await persistData(updated);

@@ -357,6 +357,10 @@ const Cart = () => {
 
                           <div className="mt-6 pt-6 border-t border-gray-100 space-y-2">
                             <div className="flex justify-between text-sm">
+                              <span className="text-gray-500">Reference Number</span>
+                              <span className="font-mono">{referenceNumber}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
                               <span className="text-gray-500">Subtotal</span>
                               <span className="font-mono">₱{subtotal.toLocaleString()}</span>
                             </div>

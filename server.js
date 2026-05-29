@@ -466,7 +466,8 @@ const initDb = async () => {
         booking_time VARCHAR(50),
         guests INT DEFAULT 1,
         status VARCHAR(50) DEFAULT 'pending',
-        created_at VARCHAR(100)
+        created_at VARCHAR(100),
+        reference_number VARCHAR(255)
       )
     `);
 
@@ -478,6 +479,7 @@ const initDb = async () => {
     await addColumnIfMissing("bookings", "guests", "INT DEFAULT 1");
     await addColumnIfMissing("bookings", "status", "VARCHAR(50) DEFAULT 'pending'");
     await addColumnIfMissing("bookings", "created_at", "VARCHAR(100)");
+    await addColumnIfMissing("bookings", "reference_number", "VARCHAR(255)");
 
     const bookingColumnsAfterCreate = await getColumns("bookings");
     if (bookingColumnsAfterCreate.has("date")) {
@@ -572,7 +574,7 @@ const readSiteData = async () => {
   );
   const [bookings] = await db.query(
     `SELECT id, user_id AS userId, name, email, phone, booking_date AS date,
-            booking_time AS time, guests, status, created_at AS createdAt
+            booking_time AS time, guests, status, created_at AS createdAt, reference_number AS referenceNumber
      FROM bookings ORDER BY created_at DESC`
   );
   const [orders] = await db.query(
@@ -602,6 +604,7 @@ const readSiteData = async () => {
     guests: Number(booking.guests || 1),
     status: ["pending", "confirmed", "cancelled"].includes(booking.status) ? booking.status : "pending",
     createdAt: toIso(booking.createdAt),
+    referenceNumber: booking.referenceNumber || undefined,
   }));
 
   data.orders = orders.map((order) => ({
@@ -699,8 +702,8 @@ const persistFullSiteData = async (incoming) => {
     for (const booking of data.bookings) {
       if (!booking.id) continue;
       await connection.query(
-        `INSERT INTO bookings (id, user_id, name, email, phone, booking_date, booking_time, guests, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO bookings (id, user_id, name, email, phone, booking_date, booking_time, guests, status, created_at, reference_number)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           booking.id,
           booking.userId || booking.email || "",
@@ -712,6 +715,7 @@ const persistFullSiteData = async (incoming) => {
           Number(booking.guests || 1),
           booking.status || "pending",
           booking.createdAt || new Date().toISOString(),
+          booking.referenceNumber || null,
         ]
       );
     }
@@ -872,7 +876,7 @@ app.patch("/api/bookings/:id/status", async (req, res) => {
     const db = requireDb();
     await db.query("UPDATE bookings SET status = ? WHERE id = ?", [status, req.params.id]);
     const [rows] = await db.query(
-      `SELECT id, user_id AS userId, name, email, phone, booking_date AS date, booking_time AS time, guests, status, created_at AS createdAt
+      `SELECT id, user_id AS userId, name, email, phone, booking_date AS date, booking_time AS time, guests, status, created_at AS createdAt, reference_number AS referenceNumber
        FROM bookings WHERE id = ?`,
       [req.params.id]
     );
@@ -943,7 +947,7 @@ app.get("/api/bookings", async (req, res) => {
     const offset = (page - 1) * limit;
     const db = requireDb();
     const [rows] = await db.query(
-      `SELECT id, user_id AS userId, name, email, phone, booking_date AS date, booking_time AS time, guests, status, created_at AS createdAt
+      `SELECT id, user_id AS userId, name, email, phone, booking_date AS date, booking_time AS time, guests, status, created_at AS createdAt, reference_number AS referenceNumber
        FROM bookings ORDER BY created_at DESC LIMIT ? OFFSET ?`,
       [limit, offset]
     );

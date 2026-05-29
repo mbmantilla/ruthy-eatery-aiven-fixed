@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿import { useState, useEffect, useMemo } from 'react';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { useState, useEffect, useMemo } from 'react';
 import { useSiteData, MenuItem } from '../context/SiteContext';
 import { 
   LayoutDashboard, 
@@ -583,7 +583,14 @@ const AdminDashboard = () => {
                             ))}
                             <div className="flex justify-between items-center pt-3 border-t border-gray-100">
                                <span className="font-bold text-gray-900">Total to Pay</span>
-                               <span className="text-xl font-bold text-amber-600">₱{order.total.toLocaleString()}</span>
+                               <div className="text-right">
+                                <div className="text-xs text-gray-400">Reference Number</div>
+                                <span className="text-sm font-bold text-gray-900">{order.referenceNumber}</span>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs text-gray-400">Total to Pay</div>
+                                <span className="text-xl font-bold text-amber-600">₱{order.total.toLocaleString()}</span>
+                              </div>
                             </div>
                             {!order.isPaid && (
                               <button 

@@ -20,7 +20,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
     phone: '',
     date: '',
     time: '',
-    guests: 2
+    guests: 2,
+    referenceNumber: ''
   });
 
   useEffect(() => {
@@ -43,7 +44,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
         ...formData,
         userId: currentUser.email
       });
-      setStep(3);
+      setStep(4);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Unable to save reservation. Please try again.');
     }
@@ -147,6 +148,34 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
               )}
 
               {step === 2 && (
+                <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
+                  <div className="flex flex-col items-center">
+                    <img src="/payment-qr.jpg" alt="Payment QR Code" className="w-48 h-48" />
+                    <p className="text-xs text-gray-500 mt-2">Scan to pay with GCash</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-2">Reference Number</label>
+                    <input
+                      required
+                      type="text"
+                      placeholder="GCash Reference Number"
+                      value={formData.referenceNumber}
+                      onChange={e => setFormData({ ...formData, referenceNumber: e.target.value })}
+                      className="w-full p-4 border border-gray-100 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-amber-500/20"
+                    />
+                  </div>
+                  <button
+                    onClick={nextStep}
+                    disabled={!formData.referenceNumber}
+                    className="w-full bg-gray-900 text-white font-bold py-5 rounded-[1.5rem] hover:bg-gray-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <span>Continue to Details</span>
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+              )}
+
+              {step === 3 && (
                 <form onSubmit={handleSubmit} className="space-y-8 animate-in slide-in-from-right-4 duration-300">
                   <div className="space-y-4">
                     <input
@@ -199,7 +228,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
                 </form>
               )}
 
-              {step === 3 && (
+              {step === 4 && (
                 <div className="text-center py-10 space-y-8 animate-in zoom-in-95 duration-500">
                   <div className="bg-green-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle className="h-12 w-12 text-green-600" />
