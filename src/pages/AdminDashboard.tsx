@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react';
+﻿﻿import { useState, useEffect, useMemo } from 'react';
 import { useSiteData, MenuItem } from '../context/SiteContext';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { 
@@ -35,6 +35,8 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Login from '../components/Login';
+import LineChartCard from '../components/LineChartCard';
+import DonutChartCard from '../components/DonutChartCard';
 
 const parsePeso = (value: string) => Number(value.replace(/[^\d.-]/g, '')) || 0;
 const formatPeso = (value: number) => `₱${value.toFixed(2)}`;
@@ -911,60 +913,9 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="grid xl:grid-cols-3 gap-6">
-                  <div className="col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="font-bold text-gray-900">Order & Booking Analytics</h3>
-                        <p className="text-sm text-gray-500">Visualize recent performance at a glance.</p>
-                      </div>
-                    </div>
-                    <div className="space-y-6">
-                      <div>
-                        <div className="flex items-center justify-between mb-3 text-xs uppercase tracking-widest text-gray-400 font-bold">
-                          <span>Order Status</span>
-                          <span>{data.orders.length} total</span>
-                        </div>
-                        <div className="space-y-3">
-                          {Object.entries(orderStats).map(([status, count]) => {
-                            const width = data.orders.length ? Math.max(6, Math.round((count / data.orders.length) * 100)) : 0;
-                            return (
-                              <div key={status}>
-                                <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                                  <span>{status}</span>
-                                  <span>{count}</span>
-                                </div>
-                                <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
-                                  <div className={`h-full rounded-full ${status === 'completed' ? 'bg-green-500' : status === 'cancelled' ? 'bg-red-500' : status === 'preparing' ? 'bg-amber-500' : 'bg-blue-500'}`} style={{ width: `${width}%` }} />
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-3 text-xs uppercase tracking-widest text-gray-400 font-bold">
-                          <span>Booking Status</span>
-                          <span>{data.bookings.length} total</span>
-                        </div>
-                        <div className="space-y-3">
-                          {Object.entries(bookingStats).map(([status, count]) => {
-                            const width = data.bookings.length ? Math.max(6, Math.round((count / data.bookings.length) * 100)) : 0;
-                            return (
-                              <div key={status}>
-                                <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                                  <span>{status}</span>
-                                  <span>{count}</span>
-                                </div>
-                                <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
-                                  <div className={`h-full rounded-full ${status === 'confirmed' ? 'bg-green-500' : status === 'cancelled' ? 'bg-red-500' : 'bg-amber-500'}`} style={{ width: `${width}%` }} />
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
+                  <div className="xl:col-span-2 grid md:grid-cols-2 gap-6">
+                    <LineChartCard data={revenueTrendData} />
+                    <DonutChartCard data={orderStatusChartData} />
                   </div>
 
                   <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
@@ -1752,6 +1703,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
-
-
