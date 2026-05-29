@@ -54,6 +54,7 @@ export interface SiteOrder {
   total: number;
   status: 'pending' | 'preparing' | 'completed' | 'cancelled';
   createdAt: string;
+  isPaid?: boolean;
 }
 
 export interface SiteUser {
@@ -187,6 +188,7 @@ interface SiteContextType {
   updateBookingStatus: (id: string, status: SiteBooking['status']) => Promise<void>;
   addOrder: (order: Omit<SiteOrder, 'id' | 'status' | 'createdAt'>) => Promise<SiteOrder>;
   updateOrderStatus: (id: string, status: SiteOrder['status']) => Promise<void>;
+  updateOrderPaymentStatus: (id: string, isPaid: boolean) => Promise<void>;
   replyToMessage: (id: string, reply: string) => Promise<void>;
   respondToMessage: (id: string, followUp: string) => Promise<void>;
   addUser: (user: Omit<SiteUser, 'registeredAt'>) => Promise<void>;
@@ -321,6 +323,12 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setData({ ...data, orders: updatedOrders });
   };
 
+  const updateOrderPaymentStatus = async (id: string, isPaid: boolean) => {
+    await backendService.updateOrderPaymentStatus(id, isPaid);
+    const updatedOrders = data.orders.map(o => o.id === id ? { ...o, isPaid } : o);
+    setData({ ...data, orders: updatedOrders });
+  };
+
   const replyToMessage = async (id: string, reply: string) => {
     const result = await backendService.replyMessage(id, reply);
     const updatedMessages = data.messages.map(m =>
@@ -412,6 +420,7 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateBookingStatus,
       addOrder,
       updateOrderStatus,
+      updateOrderPaymentStatus,
       isAdmin, 
       isUserLoggedIn,
       currentUser,

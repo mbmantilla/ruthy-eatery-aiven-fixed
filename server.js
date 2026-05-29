@@ -498,7 +498,8 @@ const initDb = async () => {
         items_json LONGTEXT,
         total DECIMAL(10,2) DEFAULT 0,
         status VARCHAR(50) DEFAULT 'pending',
-        created_at VARCHAR(100)
+        created_at VARCHAR(100),
+        is_paid TINYINT(1) DEFAULT 0
       )
     `);
 
@@ -510,6 +511,7 @@ const initDb = async () => {
     await addColumnIfMissing("orders", "total", "DECIMAL(10,2) DEFAULT 0");
     await addColumnIfMissing("orders", "status", "VARCHAR(50) DEFAULT 'pending'");
     await addColumnIfMissing("orders", "created_at", "VARCHAR(100)");
+    await addColumnIfMissing("orders", "is_paid", "TINYINT(1) DEFAULT 0");
 
     const orderColumnsAfterCreate = await getColumns("orders");
     if (orderColumnsAfterCreate.has("type")) {
@@ -573,7 +575,7 @@ const readSiteData = async () => {
   );
   const [orders] = await db.query(
     `SELECT id, user_id AS userId, customer_name AS customerName, phone,
-            order_type AS type, address, items_json AS itemsJson, total, status, created_at AS createdAt
+            order_type AS type, address, items_json AS itemsJson, total, status, created_at AS createdAt, is_paid AS isPaid
      FROM orders ORDER BY created_at DESC`
   );
 
@@ -613,6 +615,7 @@ const readSiteData = async () => {
       ? order.status
       : "pending",
     createdAt: toIso(order.createdAt),
+    isPaid: Boolean(order.isPaid),
   }));
 
   return data;
@@ -714,8 +717,8 @@ const persistFullSiteData = async (incoming) => {
       if (!order.id) continue;
       const items = Array.isArray(order.items) ? order.items : [];
       await connection.query(
-        `INSERT INTO orders (id, user_id, customer_name, phone, order_type, address, items_json, total, status, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO orders (id, user_id, customer_name, phone, order_type, address, items_json, total, status, created_at, is_paid)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           order.id,
           order.userId || "",
@@ -727,6 +730,7 @@ const persistFullSiteData = async (incoming) => {
           Number(order.total || 0),
           order.status || "pending",
           order.createdAt || new Date().toISOString(),
+          order.isPaid ? 1 : 0,
         ]
       );
 
@@ -826,6 +830,29 @@ app.patch("/api/orders/:id/status", async (req, res) => {
       return res.status(404).json({ error: "Order not found." });
     }
     res.json({ success: true, order: rows[0] });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+app.patch("/api/orders/:id/payment-status", async (req, res) => {
+  try {
+    const { isPaid } = req.body;
+    if (typeof isPaid !== "boolean") {
+      return res.status(400).json({ error: "Invalid 'isPaid' value. It must be a boolean." });
+    }
+    const db = requireDb();
+    await db.query("UPDATE orders SET is_paid = ? WHERE id = ?", [isPaid, req.params.id]);
+    const [rows] = await db.query(
+      `SELECT id, user_id AS userId, customer_name AS customerName, phone, order_type AS type, address, items_json AS itemsJson, total, status, created_at AS createdAt, is_paid AS isPaid
+       FROM orders WHERE id = ?`,
+      [req.params.id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Order not found." });
+    }
+    const order = { ...rows[0], isPaid: Boolean(rows[0].isPaid) };
+    res.json({ success: true, order });
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
   }

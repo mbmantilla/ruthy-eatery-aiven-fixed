@@ -71,6 +71,16 @@ export const backendService = {
     return await parseJsonResponse(response);
   },
 
+  updateOrderPaymentStatus: async (id: string, isPaid: boolean) => {
+    if (!id) throw new Error('Order id is required');
+    const response = await fetch(`${API_URL}/orders/${encodeURIComponent(id)}/payment-status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPaid }),
+    });
+    return await parseJsonResponse(response);
+  },
+
   updateBookingStatus: async (id: string, status: string) => {
     if (!id) throw new Error('Booking id is required');
     const response = await fetch(`${API_URL}/bookings/${encodeURIComponent(id)}/status`, {
