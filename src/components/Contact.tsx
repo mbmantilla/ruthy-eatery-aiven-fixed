@@ -142,6 +142,16 @@ const Contact = () => {
             )}
           </div>
         </div>
+
+        {/* Location Map */}
+        <div className="mt-12 rounded-3xl overflow-hidden shadow-2xl">
+          <iframe
+            title="Restaurant Location"
+            src={`https://maps.google.com/maps?q=${encodeURIComponent(data.contact.address)}&output=embed`}
+            className="w-full h-96 border-0"
+            loading="lazy"
+          />
+        </div>
       </div>
     </section>
   );
