@@ -295,7 +295,7 @@ const Cart = () => {
                         <div className="bg-gray-50 p-4 rounded-xl text-xs text-gray-500">
                           {orderType === 'pickup' 
                             ? `Pickup from: ${data.contact.address}`
-                            : `Estimated delivery time: 30-45 mins`}
+                            : `Delivery to: ${address.street}, Brgy. ${address.barangay}, ${address.city}${address.notes ? ` (${address.notes})` : ''}`}
                         </div>
 
                         {checkoutError && (
@@ -346,7 +346,7 @@ const Cart = () => {
                               </div>
                             )}
                             <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-100">
-                              <span>Total Paid</span>
+                              <span>Total Amount to Pay</span>
                               <span className="text-amber-600">₱{total.toLocaleString()}</span>
                             </div>
                           </div>
