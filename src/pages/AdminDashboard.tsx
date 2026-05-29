@@ -1,6 +1,5 @@
 ﻿﻿import { useState, useEffect, useMemo } from 'react';
 import { useSiteData, MenuItem } from '../context/SiteContext';
-import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { 
   LayoutDashboard, 
   Image as ImageIcon, 
@@ -211,33 +210,6 @@ const AdminDashboard = () => {
     unread: data.messages.filter((m) => !m.isRead).length,
   }), [data.messages]);
   const totalRevenue = useMemo(() => data.orders.reduce((sum, order) => sum + Number(order.total || 0), 0), [data.orders]);
-
-  // Chart data: Revenue trend (last 7 days)
-  const revenueTrendData = useMemo(() => {
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (6 - i));
-      return date.toISOString().split('T')[0];
-    });
-
-    return last7Days.map((day) => {
-      const dayRevenue = data.orders
-        .filter((o) => o.createdAt?.startsWith(day))
-        .reduce((sum, order) => sum + Number(order.total || 0), 0);
-      return {
-        date: new Date(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        revenue: dayRevenue,
-      };
-    });
-  }, [data.orders]);
-
-  // Chart data: Order status breakdown (Donut)
-  const orderStatusChartData = useMemo(() => [
-    { name: 'Completed', value: orderStats.completed, color: '#10b981' },
-    { name: 'Pending', value: orderStats.pending, color: '#3b82f6' },
-    { name: 'Preparing', value: orderStats.preparing, color: '#f59e0b' },
-    { name: 'Cancelled', value: orderStats.cancelled, color: '#ef4444' },
-  ].filter(item => item.value > 0), [orderStats]);
 
   useEffect(() => {
     if (bookingPage > totalBookingPages) {
