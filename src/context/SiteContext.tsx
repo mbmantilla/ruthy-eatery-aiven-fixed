@@ -55,6 +55,7 @@ export interface SiteOrder {
   status: 'pending' | 'preparing' | 'completed' | 'cancelled';
   createdAt: string;
   isPaid?: boolean;
+  referenceNumber?: string;
 }
 
 export interface SiteUser {
@@ -186,7 +187,7 @@ interface SiteContextType {
   deleteMessage: (id: string) => Promise<void>;
   addBooking: (booking: Omit<SiteBooking, 'id' | 'status' | 'createdAt'>) => Promise<void>;
   updateBookingStatus: (id: string, status: SiteBooking['status']) => Promise<void>;
-  addOrder: (order: Omit<SiteOrder, 'id' | 'status' | 'createdAt'>) => Promise<SiteOrder>;
+  addOrder: (order: Omit<SiteOrder, 'id' | 'status' | 'createdAt'>, referenceNumber?: string) => Promise<SiteOrder>;
   updateOrderStatus: (id: string, status: SiteOrder['status']) => Promise<void>;
   updateOrderPaymentStatus: (id: string, isPaid: boolean) => Promise<void>;
   replyToMessage: (id: string, reply: string) => Promise<void>;
@@ -305,12 +306,13 @@ export const SiteProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setData({ ...data, bookings: updatedBookings });
   };
 
-  const addOrder = async (order: Omit<SiteOrder, 'id' | 'status' | 'createdAt'>) => {
+  const addOrder = async (order: Omit<SiteOrder, 'id' | 'status' | 'createdAt'>, referenceNumber?: string) => {
     const newOrder: SiteOrder = {
       ...order,
       id: 'OR-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
       status: 'pending',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      referenceNumber,
     };
     const updated = { ...data, orders: [newOrder, ...data.orders] };
     await persistData(updated);

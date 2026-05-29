@@ -499,7 +499,8 @@ const initDb = async () => {
         total DECIMAL(10,2) DEFAULT 0,
         status VARCHAR(50) DEFAULT 'pending',
         created_at VARCHAR(100),
-        is_paid TINYINT(1) DEFAULT 0
+        is_paid TINYINT(1) DEFAULT 0,
+        reference_number VARCHAR(255)
       )
     `);
 
@@ -512,6 +513,7 @@ const initDb = async () => {
     await addColumnIfMissing("orders", "status", "VARCHAR(50) DEFAULT 'pending'");
     await addColumnIfMissing("orders", "created_at", "VARCHAR(100)");
     await addColumnIfMissing("orders", "is_paid", "TINYINT(1) DEFAULT 0");
+    await addColumnIfMissing("orders", "reference_number", "VARCHAR(255)");
 
     const orderColumnsAfterCreate = await getColumns("orders");
     if (orderColumnsAfterCreate.has("type")) {
@@ -575,7 +577,7 @@ const readSiteData = async () => {
   );
   const [orders] = await db.query(
     `SELECT id, user_id AS userId, customer_name AS customerName, phone,
-            order_type AS type, address, items_json AS itemsJson, total, status, created_at AS createdAt, is_paid AS isPaid
+            order_type AS type, address, items_json AS itemsJson, total, status, created_at AS createdAt, is_paid AS isPaid, reference_number AS referenceNumber
      FROM orders ORDER BY created_at DESC`
   );
 
@@ -616,6 +618,7 @@ const readSiteData = async () => {
       : "pending",
     createdAt: toIso(order.createdAt),
     isPaid: Boolean(order.isPaid),
+    referenceNumber: order.referenceNumber || undefined,
   }));
 
   return data;
@@ -717,8 +720,8 @@ const persistFullSiteData = async (incoming) => {
       if (!order.id) continue;
       const items = Array.isArray(order.items) ? order.items : [];
       await connection.query(
-        `INSERT INTO orders (id, user_id, customer_name, phone, order_type, address, items_json, total, status, created_at, is_paid)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO orders (id, user_id, customer_name, phone, order_type, address, items_json, total, status, created_at, is_paid, reference_number)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           order.id,
           order.userId || "",
@@ -731,6 +734,7 @@ const persistFullSiteData = async (incoming) => {
           order.status || "pending",
           order.createdAt || new Date().toISOString(),
           order.isPaid ? 1 : 0,
+          order.referenceNumber || null,
         ]
       );
 
@@ -844,7 +848,7 @@ app.patch("/api/orders/:id/payment-status", async (req, res) => {
     const db = requireDb();
     await db.query("UPDATE orders SET is_paid = ? WHERE id = ?", [isPaid, req.params.id]);
     const [rows] = await db.query(
-      `SELECT id, user_id AS userId, customer_name AS customerName, phone, order_type AS type, address, items_json AS itemsJson, total, status, created_at AS createdAt, is_paid AS isPaid
+      `SELECT id, user_id AS userId, customer_name AS customerName, phone, order_type AS type, address, items_json AS itemsJson, total, status, created_at AS createdAt, is_paid AS isPaid, reference_number AS referenceNumber
        FROM orders WHERE id = ?`,
       [req.params.id]
     );

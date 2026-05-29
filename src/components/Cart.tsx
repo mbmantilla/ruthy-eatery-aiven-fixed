@@ -32,6 +32,7 @@ const Cart = () => {
   const [address, setAddress] = useState({ street: '', barangay: '', city: '', notes: '' });
   const [orderInfo, setOrderInfo] = useState({ name: '', phone: '' });
   const [placedOrderId, setPlacedOrderId] = useState('');
+  const [referenceNumber, setReferenceNumber] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
 
   // Pre-fill user info if logged in
@@ -99,7 +100,7 @@ const Cart = () => {
         address: fullAddress,
         items: cart,
         total: total
-      });
+      }, referenceNumber);
       setPlacedOrderId(savedOrder.id);
       setStep('receipt');
     } catch (error) {
@@ -292,6 +293,26 @@ const Cart = () => {
                           )}
                         </div>
                         
+
+                        <div className="space-y-4 pt-4 border-t border-gray-100">
+                          <h4 className="text-sm font-bold text-gray-900">Payment</h4>
+                          <div className="flex flex-col items-center">
+                            <img src="/payment-qr.png" alt="Payment QR Code" className="w-48 h-48" />
+                            <p className="text-xs text-gray-500 mt-2">Scan to pay with GCash</p>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-2">Reference Number</label>
+                            <input
+                              required
+                              type="text"
+                              placeholder="GCash Reference Number"
+                              value={referenceNumber}
+                              onChange={e => setReferenceNumber(e.target.value)}
+                              className="w-full p-4 border border-gray-100 rounded-2xl bg-gray-50 focus:bg-white outline-none focus:ring-2 focus:ring-amber-500/20"
+                            />
+                          </div>
+                        </div>
+
                         <div className="bg-gray-50 p-4 rounded-xl text-xs text-gray-500">
                           {orderType === 'pickup' 
                             ? `Pickup from: ${data.contact.address}`
@@ -403,4 +424,3 @@ const Cart = () => {
 };
 
 export default Cart;
-
