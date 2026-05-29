@@ -516,6 +516,7 @@ const initDb = async () => {
     await addColumnIfMissing("orders", "created_at", "VARCHAR(100)");
     await addColumnIfMissing("orders", "is_paid", "TINYINT(1) DEFAULT 0");
     await addColumnIfMissing("orders", "reference_number", "VARCHAR(255)");
+    await addColumnIfMissing("orders", "reference_number", "VARCHAR(255)");
 
     const orderColumnsAfterCreate = await getColumns("orders");
     if (orderColumnsAfterCreate.has("type")) {
@@ -838,6 +839,26 @@ app.patch("/api/orders/:id/status", async (req, res) => {
       return res.status(404).json({ error: "Order not found." });
     }
     res.json({ success: true, order: rows[0] });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+app.post("/api/orders", async (req, res) => {
+  try {
+    const db = requireDb();
+    const { customerName, phone, orderType, address, items, total, referenceNumber } = req.body;
+    const userId = req.user?.email || null;
+    const id = `order_${crypto.randomBytes(16).toString("hex")}`;
+    const createdAt = new Date().toISOString();
+
+    await db.query(
+      `INSERT INTO orders (id, user_id, customer_name, phone, order_type, address, items_json, total, created_at, reference_number)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+      [id, userId, customerName, phone, orderType, address, JSON.stringify(items), total, createdAt, referenceNumber]
+    );
+
+    res.status(201).json({ id, customerName, phone, orderType, address, items, total, createdAt, referenceNumber });
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
   }

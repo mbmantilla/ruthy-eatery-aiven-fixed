@@ -152,6 +152,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
                   <div className="flex flex-col items-center">
                     <img src="/payment-qr.jpg" alt="Payment QR Code" className="w-48 h-48" />
                     <p className="text-xs text-gray-500 mt-2">Scan to pay with GCash</p>
+              <p className="text-xs text-gray-500 mt-2">Note: A reservation fee of ₱500 is required. This fee will be refunded once you arrive at the eatery.</p>
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-2">Reference Number</label>

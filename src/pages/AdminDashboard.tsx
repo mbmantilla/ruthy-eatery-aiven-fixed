@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { useState, useEffect, useMemo } from 'react';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { useState, useEffect, useMemo } from 'react';
 import { useSiteData, MenuItem } from '../context/SiteContext';
 import { 
   LayoutDashboard, 
@@ -737,6 +737,7 @@ const AdminDashboard = () => {
                              <div>
                                 <h4 className="text-xl font-bold text-gray-900">{booking.name}</h4>
                                 <p className="text-amber-600 font-bold text-sm">{booking.guests} Guests</p>
+                                {booking.referenceNumber && <p className="text-xs text-gray-400 mt-1 font-mono">Ref: {booking.referenceNumber}</p>}
                              </div>
                              <span className="font-mono text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded">{booking.id}</span>
                           </div>
