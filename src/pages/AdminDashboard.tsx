@@ -1,4 +1,4 @@
-﻿﻿import { useState, useEffect, useMemo } from 'react';
+﻿﻿﻿﻿import { useState, useEffect, useMemo } from 'react';
 import { useSiteData, MenuItem } from '../context/SiteContext';
 import { 
   LayoutDashboard, 
@@ -157,6 +157,7 @@ const AdminDashboard = () => {
     replyToMessage,
     updateBookingStatus,
     updateOrderStatus,
+    updateOrderPaymentStatus,
     addUser,
     updateUser,
     deleteUser,
@@ -209,7 +210,7 @@ const AdminDashboard = () => {
     awaiting: data.messages.filter((m) => !m.reply).length,
     unread: data.messages.filter((m) => !m.isRead).length,
   }), [data.messages]);
-  const totalRevenue = useMemo(() => data.orders.filter(o => o.paymentStatus === 'paid' || o.isPaid === true).reduce((sum, order) => sum + Number(order.total || 0), 0), [data.orders]);
+  const totalRevenue = useMemo(() => data.orders.reduce((sum, order) => sum + (order.isPaid ? Number(order.total) : 0), 0), [data.orders]);
 
   const revenueTrendData = useMemo(() => {
     const today = new Date();
@@ -584,6 +585,14 @@ const AdminDashboard = () => {
                                <span className="font-bold text-gray-900">Total to Pay</span>
                                <span className="text-xl font-bold text-amber-600">₱{order.total.toLocaleString()}</span>
                             </div>
+                            {!order.isPaid && (
+                              <button 
+                                onClick={() => updateOrderPaymentStatus(order.id, true)}
+                                className="w-full mt-2 bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-green-600 transition-all"
+                              >
+                                Mark as Paid
+                              </button>
+                            )}
                          </div>
                       </div>
                     ))
@@ -915,7 +924,7 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex flex-wrap gap-4">
                       <div className="rounded-3xl bg-white/10 px-5 py-4">
-                        <p className="text-xs uppercase tracking-widest opacity-80">Total to Pay</p>
+                        <p className="text-xs uppercase tracking-widest opacity-80">Total Revenue</p>
                         <motion.div 
   key={totalRevenue} 
   initial={{ scale: 0.9, opacity: 0 }}
