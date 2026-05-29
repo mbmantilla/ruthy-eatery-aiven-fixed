@@ -211,6 +211,42 @@ const AdminDashboard = () => {
   }), [data.messages]);
   const totalRevenue = useMemo(() => data.orders.reduce((sum, order) => sum + Number(order.total || 0), 0), [data.orders]);
 
+  const revenueTrendData = useMemo(() => {
+    const today = new Date();
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() - (6 - index));
+      return {
+        key: date.toISOString().slice(0, 10),
+        name: date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        value: 0,
+      };
+    });
+
+    data.orders.forEach((order) => {
+      const orderDate = order.createdAt ? new Date(order.createdAt) : null;
+      if (!orderDate || Number.isNaN(orderDate.getTime())) return;
+      const key = orderDate.toISOString().slice(0, 10);
+      const day = days.find((item) => item.key === key);
+      if (day) day.value += Number(order.total || 0);
+    });
+
+    return days.map(({ name, value }) => ({ name, value }));
+  }, [data.orders]);
+
+  const orderStatusChartData = useMemo(() => ([
+    { name: 'Pending', value: orderStats.pending },
+    { name: 'Preparing', value: orderStats.preparing },
+    { name: 'Completed', value: orderStats.completed },
+    { name: 'Cancelled', value: orderStats.cancelled },
+  ]), [orderStats]);
+
+  const bookingStatusChartData = useMemo(() => ([
+    { name: 'Pending', value: bookingStats.pending },
+    { name: 'Confirmed', value: bookingStats.confirmed },
+    { name: 'Cancelled', value: bookingStats.cancelled },
+  ]), [bookingStats]);
+
   useEffect(() => {
     if (bookingPage > totalBookingPages) {
       setBookingPage(totalBookingPages);
@@ -275,6 +311,19 @@ const AdminDashboard = () => {
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleLoginAsUser = (user: any) => {
+    if (!confirm(`Login as ${user.name}? You will be redirected to the customer dashboard.`)) return;
+
+    const sessionUser = {
+      name: user.name,
+      email: user.email,
+      role: 'user' as const,
+    };
+
+    localStorage.setItem('ruthy_session_user', JSON.stringify(sessionUser));
+    window.location.assign('/dashboard');
   };
 
   const handleChange = (section: keyof typeof data, field: string, value: any) => {
@@ -608,12 +657,7 @@ const AdminDashboard = () => {
                                  <div className="flex items-center justify-end gap-2">
                                     {user.role !== 'admin' && (
                                       <button 
-                                        onClick={() => {
-                                          if(confirm(`Login as ${user.name}? You will be redirected to the customer dashboard.`)) {
-                                            login(user.email, 'bypass', user.name);
-                                            navigate('/dashboard');
-                                          }
-                                        }}
+                                        onClick={() => handleLoginAsUser(user)}
                                         className="p-2 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-100 transition-all"
                                         title="Login As"
                                       >
