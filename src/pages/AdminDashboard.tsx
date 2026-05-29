@@ -916,7 +916,15 @@ const AdminDashboard = () => {
                     <div className="flex flex-wrap gap-4">
                       <div className="rounded-3xl bg-white/10 px-5 py-4">
                         <p className="text-xs uppercase tracking-widest opacity-80">Total to Pay</p>
-                        <p className="text-3xl font-bold">₱{totalRevenue.toLocaleString()}</p>
+                        <motion.div 
+  key={totalRevenue} 
+  initial={{ scale: 0.9, opacity: 0 }}
+  animate={{ scale: 1, opacity: 1 }}
+  transition={{ duration: 0.4, ease: "easeOut" }}
+  className="text-3xl font-bold"
+>
+  ₱{totalRevenue.toLocaleString()}
+</motion.div>
                       </div>
                       <div className="rounded-3xl bg-white/10 px-5 py-4">
                         <p className="text-xs uppercase tracking-widest opacity-80">Active Orders</p>
