@@ -297,7 +297,7 @@ const Cart = () => {
                         <div className="space-y-4 pt-4 border-t border-gray-100">
                           <h4 className="text-sm font-bold text-gray-900">Payment</h4>
                           <div className="flex flex-col items-center">
-                            <img src="/payment-qr.png" alt="Payment QR Code" className="w-48 h-48" />
+                            <img src="/payment_qr.png" alt="Payment QR Code" className="w-48 h-48" />
                             <p className="text-xs text-gray-500 mt-2">Scan to pay with GCash</p>
                           </div>
                           <div className="space-y-1">
