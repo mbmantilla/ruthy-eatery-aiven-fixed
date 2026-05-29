@@ -1,4 +1,4 @@
-﻿﻿﻿﻿import { useState, useEffect, useMemo } from 'react';
+﻿﻿﻿﻿﻿﻿import { useState, useEffect, useMemo } from 'react';
 import { useSiteData, MenuItem } from '../context/SiteContext';
 import { 
   LayoutDashboard, 
@@ -468,7 +468,7 @@ const AdminDashboard = () => {
           <SidebarItem id="orders" icon={ShoppingBag} label="Orders" />
           <SidebarItem id="bookings" icon={Calendar} label="Reservations" />
           <SidebarItem id="users" icon={Users} label="User Accounts" />
-          <SidebarItem id="messages" icon={Mail} label="Inbox Messages" />
+          <SidebarItem id="messages" icon={Mail} label="Inbox" />
           <div className="pt-4 pb-2 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Content Management</div>
           <SidebarItem id="hero" icon={ImageIcon} label="Hero Section" />
           <SidebarItem id="about" icon={Type} label="About Section" />
@@ -832,19 +832,7 @@ const AdminDashboard = () => {
                                   {msg.subject}
                                   {!msg.isRead && <span className="bg-amber-500 text-white text-[10px] uppercase px-2 py-0.5 rounded-full">New</span>}
                                 </h4>
-                                <p className="text-amber-600 font-bold text-sm">From: {msg.name} ({msg.email})
-
-<button
-  onClick={() => handleMarkOrderAsPaid(order.id)}
-  disabled={order.paymentStatus === 'paid' || order.isPaid === true}
-  className={`px-3 py-2 rounded-2xl text-xs font-bold transition-all ${
-    order.paymentStatus === 'paid' || order.isPaid === true
-      ? 'bg-green-600 text-white cursor-default'
-      : 'bg-green-100 text-green-700 hover:bg-green-600 hover:text-white'
-  }`}
->
-  {order.paymentStatus === 'paid' || order.isPaid === true ? 'Paid' : 'Mark as Paid'}
-</button></p>
+                                <p className="text-amber-600 font-bold text-sm">From: {msg.name} ({msg.email})</p>
                               </div>
                               <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase tracking-widest bg-gray-50 px-3 py-1.5 rounded-lg">
                                 <Clock className="h-3.5 w-3.5" />
